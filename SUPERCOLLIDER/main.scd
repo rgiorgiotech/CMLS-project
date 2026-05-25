@@ -3,11 +3,17 @@
     Run this file.
 */
 
+/*
+    MAIN ENTRY POINT
+    Run this file.
+*/
+
 (
 ~projectPath = thisProcess.nowExecutingPath.dirname;
 
 (~projectPath +/+ "cleanup.scd").load;
 (~projectPath +/+ "config.scd").load;
+(~projectPath +/+ "note_state.scd").load;
 
 s.waitForBoot({
 
@@ -19,6 +25,7 @@ s.waitForBoot({
 
     "============================================================".postln;
     "PROJECT BACKBONE READY.".postln;
+    "MIDI note layer improved: velocity, duration, register, polyphony, legato, repeated notes.".postln;
     "Play your virtual piano or MIDI keyboard.".postln;
     "============================================================".postln;
 });

@@ -1,51 +1,198 @@
 /*
     MAPPING LAYER
+
+    Purpose:
+    - Convert semantic note information into project actions.
+    - Trigger local SC synths.
+    - Send note information to JUCE.
+    - Send note information to Processing.
+
+    Important:
+    Raw MIDI is NOT handled here.
+    Raw MIDI enters through midi_input.scd.
 */
 
-~sendNoteOnToJuce = { |note, freq, amp|
-    ~juceAddress.sendMsg("/note/on", note, freq, amp);
-    ~juceAddress.sendMsg("/note/freq", freq);
-    ~juceAddress.sendMsg("/note/amp", amp);
+
+// ============================================================
+// OSC: NOTES TO JUCE
+// ============================================================
+
+~sendNoteOnToJuce = { |info|
+
+    ~juceAddress.sendMsg(
+        "/note/on",
+        info[\note],
+        info[\freq],
+        info[\amp],
+        info[\velocityNorm],
+        info[\polyphony],
+        info[\register].asString,
+        info[\isLegato].binaryValue,
+        info[\isRepeated].binaryValue
+    );
+
+    // Keep old simple messages for compatibility
+    ~juceAddress.sendMsg("/note/freq", info[\freq]);
+    ~juceAddress.sendMsg("/note/amp", info[\amp]);
 };
 
-~sendNoteOffToJuce = { |note|
-    ~juceAddress.sendMsg("/note/off", note);
+
+~sendNoteOffToJuce = { |info|
+
+    ~juceAddress.sendMsg(
+        "/note/off",
+        info[\note],
+        info[\duration],
+        info[\polyphonyAfterRelease]
+    );
 };
 
-~sendNoteToProcessing = { |note, velocityNorm|
-    ~processingAddress.sendMsg("/visual/note", note, velocityNorm);
+
+// ============================================================
+// OSC: NOTES TO PROCESSING
+// ============================================================
+
+~sendNoteOnToProcessing = { |info|
+
+    ~processingAddress.sendMsg(
+        "/visual/note/on",
+        info[\note],
+        info[\velocityNorm],
+        info[\polyphony],
+        info[\register].asString,
+        info[\isLegato].binaryValue,
+        info[\isRepeated].binaryValue
+    );
+
+    // Keep old simple message for compatibility
+    ~processingAddress.sendMsg(
+        "/visual/note",
+        info[\note],
+        info[\velocityNorm]
+    );
 };
+
+
+~sendNoteOffToProcessing = { |info|
+
+    ~processingAddress.sendMsg(
+        "/visual/note/off",
+        info[\note],
+        info[\duration],
+        info[\polyphonyAfterRelease]
+    );
+};
+
+
+// ============================================================
+// NOTE ON HANDLER
+// ============================================================
 
 ~handleNoteOn = { |note, velocity, channel, source|
 
-    // Ignora note oltre il MIDI 96 (troppo alte, causano loop)
-    if (note <= 96) {
-        var freq, amp, velocityNorm;
+    var info;
 
-        freq         = note.midicps;
-        amp          = velocity.linlin(1, 127, 0.02, 0.12);
-        velocityNorm = velocity / 127;
+    if (note <= ~highestAllowedNote) {
 
-        ~playSynth.value(note, freq, amp);
-        ~sendNoteOnToJuce.value(note, freq, amp);
-        ~sendNoteToProcessing.value(note, velocityNorm);
+        info = ~registerNoteOn.value(note, velocity, channel, source);
 
-        ["NOTE ON", "note:", note, "freq:", freq.round(0.01),
-         "vel:", velocity, "amp:", amp.round(0.001)].postln;
+        ~playSynth.value(
+            info[\note],
+            info[\freq],
+            info[\amp]
+        );
+
+        ~sendNoteOnToJuce.value(info);
+        ~sendNoteOnToProcessing.value(info);
+
+        [
+            "NOTE ON",
+            "note:", info[\note],
+            "freq:", info[\freq].round(0.01),
+            "vel:", info[\velocity],
+            "amp:", info[\amp].round(0.001),
+            "velNorm:", info[\velocityNorm].round(0.001),
+            "poly:", info[\polyphony],
+            "register:", info[\register],
+            "legato:", info[\isLegato],
+            "repeated:", info[\isRepeated]
+        ].postln;
     };
 };
 
+// ============================================================
+// NOTE OFF HANDLER
+// ============================================================
+
 ~handleNoteOff = { |note, velocity, channel, source|
+
+    var info;
+
+    info = ~registerNoteOff.value(note, velocity, channel, source);
+
     ~releaseSynth.value(note);
-    ~sendNoteOffToJuce.value(note);
-    ["NOTE OFF", "note:", note].postln;
+
+    ~sendNoteOffToJuce.value(info);
+    ~sendNoteOffToProcessing.value(info);
+
+    [
+        "NOTE OFF",
+        "note:", info[\note],
+        "duration:", info[\duration].round(0.001),
+        "polyAfter:", info[\polyphonyAfterRelease]
+    ].postln;
 };
 
-// Unica definizione di handleCC — manda i CC a JUCE via OSC
+
+// ============================================================
+// CC HANDLER
+// Existing simple CC forwarding.
+// Not part of this note-only improvement.
+// ============================================================
+
 ~handleCC = { |value, ccNumber, channel, source|
-    var normalized = value / 127.0;
+
+    var normalized;
+    var padIndex;
+    var isPressed;
+
+    normalized = value / 127.0;
+
+    // ------------------------------------------------------------
+    // TOUCHPAD CC HANDLING
+    // Direct physical-state mapping:
+    // red/touched  -> layer ON
+    // dark/release -> layer OFF
+    // ------------------------------------------------------------
+
+    padIndex = ~touchpadCCs.indexOf(ccNumber);
+
+    if (padIndex.notNil) {
+
+        isPressed = normalized > ~touchpadThreshold;
+
+        ~touchpadPressed[padIndex] = isPressed;
+
+        ~setLayerState.value(padIndex, isPressed);
+
+        [
+            "PAD CC",
+            "cc:", ccNumber,
+            "pad:", padIndex + 1,
+            "val:", normalized.round(0.001),
+            "pressed:", isPressed
+        ].postln;
+
+        ^nil;
+    };
+
+
+    // ------------------------------------------------------------
+    // NORMAL CC HANDLING
+    // ------------------------------------------------------------
+
     ~juceAddress.sendMsg("/cc", ccNumber, normalized);
+
     ["CC", ccNumber, "val:", normalized.round(0.001)].postln;
 };
-
 "Mapping loaded.".postln;
