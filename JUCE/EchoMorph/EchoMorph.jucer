@@ -6,8 +6,8 @@
     <GROUP id="{928CFADD-78DB-234C-BDAC-590F9D037ED2}" name="Source">
       <FILE id="bSBMOI" name="DelayModulationEngine.h" compile="0" resource="0"
             file="../Source/DelayModulationEngine.h"/>
-      <FILE id="gkikjE" name="EnvelopeFollower.h" compile="0" resource="0"
-            file="../Source/EnvelopeFollower.h"/>
+      <FILE id="aQE5Gk" name="EnvelopeFollower.h" compile="0" resource="0"
+            file="Source/EnvelopeFollower.h"/>
       <FILE id="S4yyeL" name="LFOMatrix.h" compile="0" resource="0" file="../Source/LFOMatrix.h"/>
       <FILE id="TDmE8d" name="PitchShifter.h" compile="0" resource="0" file="../Source/PitchShifter.h"/>
       <FILE id="bkRDXd" name="PluginEditor.cpp" compile="1" resource="0"
