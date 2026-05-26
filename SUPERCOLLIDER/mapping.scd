@@ -191,6 +191,8 @@
     // NORMAL CC HANDLING
     // ------------------------------------------------------------
 
+    ~processingAddress.sendMsg("/cc", ccNumber, normalized);
+
     ~juceAddress.sendMsg("/cc", ccNumber, normalized);
 
     ["CC", ccNumber, "val:", normalized.round(0.001)].postln;
