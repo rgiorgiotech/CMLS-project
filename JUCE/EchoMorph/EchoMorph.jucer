@@ -9,6 +9,7 @@
       <FILE id="gkikjE" name="EnvelopeFollower.h" compile="0" resource="0"
             file="../Source/EnvelopeFollower.h"/>
       <FILE id="S4yyeL" name="LFOMatrix.h" compile="0" resource="0" file="../Source/LFOMatrix.h"/>
+      <FILE id="TDmE8d" name="PitchShifter.h" compile="0" resource="0" file="../Source/PitchShifter.h"/>
       <FILE id="bkRDXd" name="PluginEditor.cpp" compile="1" resource="0"
             file="../Source/PluginEditor.cpp"/>
       <FILE id="cIH91e" name="PluginEditor.h" compile="0" resource="0" file="../Source/PluginEditor.h"/>
@@ -21,6 +22,8 @@
             file="../Source/SpectrumAnalyzer.h"/>
       <FILE id="ovJ0tw" name="StereoDelay.cpp" compile="1" resource="0" file="../Source/StereoDelay.cpp"/>
       <FILE id="EQFoiI" name="StereoDelay.h" compile="0" resource="0" file="../Source/StereoDelay.h"/>
+      <FILE id="Rgdpkd" name="TiramisuLookAndFeel.h" compile="0" resource="0"
+            file="../Source/TiramisuLookAndFeel.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

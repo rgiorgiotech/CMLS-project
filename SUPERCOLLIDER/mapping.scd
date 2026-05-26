@@ -194,5 +194,22 @@
     ~juceAddress.sendMsg("/cc", ccNumber, normalized);
 
     ["CC", ccNumber, "val:", normalized.round(0.001)].postln;
+
+
+    // ------------------------------------------------------------
+    // NORMAL CC HANDLING (Solo manopole reali!)
+    // ------------------------------------------------------------
+    // Se il CC non appartiene ai touchpad, allora viene trattato
+    // come controllo normale: viene mandato a Processing e a JUCE.
+    //
+    // Processing riceve il valore MIDI originale 0-127, utile per
+    // visualizzare fedelmente il movimento fisico delle manopole.
+    // JUCE riceve invece il valore normalizzato 0.0-1.0, adatto
+    // al controllo dei parametri APVTS del plugin.
+    // ------------------------------------------------------------
+
+    ~processingAddress.sendMsg("/vmpkCC", ccNumber, value);
+
+    ~juceAddress.sendMsg("/cc", ccNumber, normalized);
 };
 "Mapping loaded.".postln;

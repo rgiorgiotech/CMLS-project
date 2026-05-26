@@ -5,6 +5,7 @@
 #include "EnvelopeFollower.h"
 #include "DelayModulationEngine.h"
 #include "Saturator.h"
+#include "PitchShifter.h"
 
 class TESTINGAudioProcessor : public juce::AudioProcessor,
                                private juce::OSCReceiver::Listener<>
@@ -58,7 +59,7 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
 private:
-    // OSC — riceve i CC da SuperCollider sulla porta 9001
+    // OSC — riceve CC e pitch bend da SuperCollider sulla porta 9001
     void oscMessageReceived(const juce::OSCMessage& message) override;
     void oscBundleReceived(const juce::OSCBundle&) override {}
 
@@ -67,6 +68,7 @@ private:
     EnvelopeFollower      envelopeFollower;
     DelayModulationEngine modulationEngine;
     Saturator             saturator;
+    PitchShifter          pitchShifter;
     juce::AudioSampleBuffer dbuf;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TESTINGAudioProcessor)

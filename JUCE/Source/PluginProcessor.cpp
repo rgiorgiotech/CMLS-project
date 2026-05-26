@@ -15,8 +15,9 @@ TESTINGAudioProcessor::TESTINGAudioProcessor()
     apvts(*this, nullptr, "Parameters", createParameters())
 #endif
 {
-    // SuperCollider manda i controlli OSC su questa porta:
-    // /cc ccNumber normalizedValue
+    // SC manda OSC sulla porta 9001:
+    // /cc  ccNumber normalizedValue  → knob MPK
+    // /pb  centsValue                → joystick MPK (pitch bend → microtonalità)
     if (oscReceiver.connect(9001))
         oscReceiver.addListener(this);
 }
@@ -30,42 +31,72 @@ TESTINGAudioProcessor::~TESTINGAudioProcessor()
 //==============================================================================
 void TESTINGAudioProcessor::oscMessageReceived(const juce::OSCMessage& message)
 {
-    if (!message.getAddressPattern().matches("/cc"))
-        return;
+    const auto pattern = message.getAddressPattern();
 
-    if (message.size() < 2)
-        return;
-
-    if (!message[0].isInt32() || !message[1].isFloat32())
-        return;
-
-    const int cc = message[0].getInt32();
-    const float val = juce::jlimit(0.0f, 1.0f, message[1].getFloat32());
-
-    auto setParam = [&] (const juce::String& paramID)
+    // -------------------------------------------------------
+    // /cc ccNumber normalizedValue
+    // Knob MPK → parametri delay + pitch coarse (knob 8)
+    // -------------------------------------------------------
+    if (pattern.matches("/cc"))
     {
-        if (auto* p = apvts.getParameter(paramID))
-            p->setValueNotifyingHost(val);
-    };
+        if (message.size() < 2) return;
+        if (!message[0].isInt32() || !message[1].isFloat32()) return;
 
-    switch (cc)
+        const int   cc  = message[0].getInt32();
+        const float val = juce::jlimit(0.0f, 1.0f, message[1].getFloat32());
+
+        auto setParam = [&](const juce::String& id)
+        {
+            if (auto* p = apvts.getParameter(id))
+                p->setValueNotifyingHost(val);
+        };
+
+        switch (cc)
+        {
+            case 1: setParam("MORPH");     break;
+            case 2: setParam("WET");       break;
+            case 3: setParam("DRY");       break;
+            case 4: setParam("FEEDBACK");  break;
+            case 5: setParam("DELAYTIME"); break;
+            case 6: setParam("DAMPING");   break;
+            case 7: setParam("DRIVE");     break;
+
+            // Knob 8 → pitch coarse in semitoni (-24 → +24)
+            // val 0.0 = -24 semitoni, 0.5 = 0 (neutro), 1.0 = +24
+            case 8:
+            {
+                if (auto* p = apvts.getParameter("PITCH"))
+                    p->setValueNotifyingHost(val);
+                break;
+            }
+
+            default: break;
+        }
+        return;
+    }
+
+    // -------------------------------------------------------
+    // /pb centsValue
+    // Joystick MPK → pitch fine in cents (-100 → +100)
+    // Permette di suonare microtonalmente tra i semitoni
+    // -------------------------------------------------------
+    if (pattern.matches("/pb"))
     {
-        case 1: setParam("MORPH");     break;
-        case 2: setParam("WET");       break;
-        case 3: setParam("DRY");       break;
-        case 4: setParam("FEEDBACK");  break;
-        case 5: setParam("DELAYTIME"); break;
-        case 6: setParam("DAMPING");   break;
-        case 7: setParam("DRIVE");     break;
-        default: break;
+        if (message.size() < 1) return;
+        if (!message[0].isFloat32()) return;
+
+        const float cents = juce::jlimit(-100.0f, 100.0f, message[0].getFloat32());
+
+        // Normalizza cents (-100..+100) → (0..1) per APVTS
+        const float normalized = juce::jmap(cents, -100.0f, 100.0f, 0.0f, 1.0f);
+
+        if (auto* p = apvts.getParameter("PITCHFINE"))
+            p->setValueNotifyingHost(normalized);
     }
 }
 
 //==============================================================================
-const juce::String TESTINGAudioProcessor::getName() const
-{
-    return JucePlugin_Name;
-}
+const juce::String TESTINGAudioProcessor::getName() const { return JucePlugin_Name; }
 
 bool TESTINGAudioProcessor::acceptsMidi() const
 {
@@ -94,50 +125,24 @@ bool TESTINGAudioProcessor::isMidiEffect() const
 #endif
 }
 
-double TESTINGAudioProcessor::getTailLengthSeconds() const
-{
-    return 0.0;
-}
-
-int TESTINGAudioProcessor::getNumPrograms()
-{
-    return 1;
-}
-
-int TESTINGAudioProcessor::getCurrentProgram()
-{
-    return 0;
-}
-
-void TESTINGAudioProcessor::setCurrentProgram(int index)
-{
-    juce::ignoreUnused(index);
-}
-
-const juce::String TESTINGAudioProcessor::getProgramName(int index)
-{
-    juce::ignoreUnused(index);
-    return {};
-}
-
-void TESTINGAudioProcessor::changeProgramName(int index, const juce::String& newName)
-{
-    juce::ignoreUnused(index, newName);
-}
+double TESTINGAudioProcessor::getTailLengthSeconds() const { return 0.0; }
+int    TESTINGAudioProcessor::getNumPrograms()              { return 1; }
+int    TESTINGAudioProcessor::getCurrentProgram()           { return 0; }
+void   TESTINGAudioProcessor::setCurrentProgram(int i)      { juce::ignoreUnused(i); }
+const  juce::String TESTINGAudioProcessor::getProgramName(int i) { juce::ignoreUnused(i); return {}; }
+void   TESTINGAudioProcessor::changeProgramName(int i, const juce::String& n) { juce::ignoreUnused(i, n); }
 
 //==============================================================================
 void TESTINGAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     juce::ignoreUnused(samplesPerBlock);
-
     stereoDelay.prepare(sampleRate, 2.0f);
     envelopeFollower.prepare(sampleRate, 5.0f, 300.0f);
     modulationEngine.prepare(sampleRate);
+    pitchShifter.prepare(sampleRate);
 }
 
-void TESTINGAudioProcessor::releaseResources()
-{
-}
+void TESTINGAudioProcessor::releaseResources() {}
 
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool TESTINGAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -149,12 +154,10 @@ bool TESTINGAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) c
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
-
 #if !JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
 #endif
-
     return true;
 #endif
 }
@@ -167,39 +170,36 @@ void TESTINGAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
-    const auto totalNumInputChannels  = getTotalNumInputChannels();
-    const auto totalNumOutputChannels = getTotalNumOutputChannels();
-
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    const int totalIn  = getTotalNumInputChannels();
+    const int totalOut = getTotalNumOutputChannels();
+    for (int i = totalIn; i < totalOut; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
+    // Envelope follower
     float env = 0.0f;
-
     if (buffer.getNumChannels() > 0)
     {
         const float* input = buffer.getReadPointer(0);
-
         for (int i = 0; i < buffer.getNumSamples(); ++i)
             env = juce::jmax(env, envelopeFollower.process(input[i]));
     }
-
     envelopeValue.store(env);
 
     const float morph = apvts.getRawParameterValue("MORPH")->load();
     morphValue.store(morph);
 
+    // Delay — morph o manuale
     const bool morphOn = apvts.getRawParameterValue("MORPHON")->load() > 0.5f;
 
     if (morphOn)
     {
-        auto modParams = modulationEngine.compute(morph, env);
-
-        stereoDelay.setWet(modParams.wet);
-        stereoDelay.setDry(modParams.dry);
-        stereoDelay.setFeedback(modParams.feedback);
-        stereoDelay.setDelayMs(modParams.delayMs);
-        stereoDelay.setDampingHz(modParams.dampingHz);
-        stereoDelay.setPingPong(modParams.pingPong);
+        auto p = modulationEngine.compute(morph, env);
+        stereoDelay.setWet(p.wet);
+        stereoDelay.setDry(p.dry);
+        stereoDelay.setFeedback(p.feedback);
+        stereoDelay.setDelayMs(p.delayMs);
+        stereoDelay.setDampingHz(p.dampingHz);
+        stereoDelay.setPingPong(p.pingPong);
     }
     else
     {
@@ -211,50 +211,53 @@ void TESTINGAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         stereoDelay.setPingPong(apvts.getRawParameterValue("PINGPONG")->load() > 0.5f);
     }
 
+    // Saturatore
     saturator.setEnabled(apvts.getRawParameterValue("DRIVEON")->load() > 0.5f);
     saturator.setDrive(apvts.getRawParameterValue("DRIVE")->load());
-    
+
     saturator.process(buffer);
     stereoDelay.process(buffer);
 
-    // Alimenta lo spectrum analyzer con il segnale già processato.
+    // Pitch shifter
+    // PITCH: 0.0 = -24 semitoni, 0.5 = neutro, 1.0 = +24
+    const float pitchNorm = apvts.getRawParameterValue("PITCH")->load();
+    const float pitchSemitones = juce::jmap(pitchNorm, 0.0f, 1.0f, -24.0f, 24.0f);
+
+    // PITCHFINE: 0.0 = -100 cents, 0.5 = neutro, 1.0 = +100 cents
+    const float pitchFineNorm = apvts.getRawParameterValue("PITCHFINE")->load();
+    const float pitchFineCents = juce::jmap(pitchFineNorm, 0.0f, 1.0f, -100.0f, 100.0f);
+
+    pitchShifter.setPitchSemitones(pitchSemitones);
+    pitchShifter.setPitchCents(pitchFineCents);
+    pitchShifter.process(buffer);
+
+    // Alimenta il visualizzatore nell'editor
     if (auto* editor = dynamic_cast<TESTINGAudioProcessorEditor*>(getActiveEditor()))
         editor->pushAudioBufferToVisuals(buffer);
 }
 
 //==============================================================================
-bool TESTINGAudioProcessor::hasEditor() const
-{
-    return true;
-}
+bool TESTINGAudioProcessor::hasEditor() const { return true; }
 
 juce::AudioProcessorEditor* TESTINGAudioProcessor::createEditor()
 {
     return new TESTINGAudioProcessorEditor(*this);
 }
 
-void TESTINGAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
-{
-    juce::ignoreUnused(destData);
-}
-
-void TESTINGAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
-{
-    juce::ignoreUnused(data, sizeInBytes);
-}
+void TESTINGAudioProcessor::getStateInformation(juce::MemoryBlock& d)  { juce::ignoreUnused(d); }
+void TESTINGAudioProcessor::setStateInformation(const void* d, int s)  { juce::ignoreUnused(d, s); }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new TESTINGAudioProcessor();
 }
 
-//==============================================================================
-void TESTINGAudioProcessor::set_wet(float val)       { stereoDelay.setWet(val); }
-void TESTINGAudioProcessor::set_dry(float val)       { stereoDelay.setDry(val); }
-void TESTINGAudioProcessor::set_dampingHz(float val) { stereoDelay.setDampingHz(val); }
-void TESTINGAudioProcessor::set_feedback(float val)  { stereoDelay.setFeedback(val); }
-void TESTINGAudioProcessor::set_delayMs(float val)   { stereoDelay.setDelayMs(val); }
-void TESTINGAudioProcessor::set_pingPong(bool val)   { stereoDelay.setPingPong(val); }
+void TESTINGAudioProcessor::set_wet(float v)      { stereoDelay.setWet(v); }
+void TESTINGAudioProcessor::set_dry(float v)      { stereoDelay.setDry(v); }
+void TESTINGAudioProcessor::set_dampingHz(float v){ stereoDelay.setDampingHz(v); }
+void TESTINGAudioProcessor::set_feedback(float v) { stereoDelay.setFeedback(v); }
+void TESTINGAudioProcessor::set_delayMs(float v)  { stereoDelay.setDelayMs(v); }
+void TESTINGAudioProcessor::set_pingPong(bool v)  { stereoDelay.setPingPong(v); }
 
 //==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -263,62 +266,44 @@ TESTINGAudioProcessor::createParameters()
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "DAMPING",
-        "Damping",
-        juce::NormalisableRange<float>(500.0f, 20000.0f, 1.0f, 0.35f),
-        8000.0f));
-
+        "DAMPING", "Damping",
+        juce::NormalisableRange<float>(500.0f, 20000.0f, 1.0f, 0.35f), 8000.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "WET",
-        "Wet",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f),
-        0.35f));
-
+        "WET", "Wet",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.35f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "DRY",
-        "Dry",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f),
-        0.70f));
-
+        "DRY", "Dry",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.70f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "FEEDBACK",
-        "Feedback",
-        juce::NormalisableRange<float>(0.0f, 0.95f, 0.001f),
-        0.35f));
-
+        "FEEDBACK", "Feedback",
+        juce::NormalisableRange<float>(0.0f, 0.95f, 0.001f), 0.35f));
     params.push_back(std::make_unique<juce::AudioParameterBool>(
-        "DRIVEON",
-        "Drive On",
-        false));
-
+        "DRIVEON", "Drive On", false));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "DRIVE",
-        "Drive",
-        juce::NormalisableRange<float>(1.0f, 20.0f, 0.01f),
-        1.0f));
-
+        "DRIVE", "Drive",
+        juce::NormalisableRange<float>(1.0f, 20.0f, 0.01f), 1.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "DELAYTIME",
-        "Delay Time",
-        juce::NormalisableRange<float>(1.0f, 2000.0f, 1.0f, 0.45f),
-        350.0f));
-
+        "DELAYTIME", "Delay Time",
+        juce::NormalisableRange<float>(1.0f, 2000.0f, 1.0f, 0.45f), 350.0f));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "MORPH",
-        "Morph",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f),
-        0.0f));
-
+        "MORPH", "Morph",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.0f));
     params.push_back(std::make_unique<juce::AudioParameterBool>(
-        "PINGPONG",
-        "Ping Pong",
-        false));
-
-    // Di default OFF: così i knob manuali non vengono sovrascritti dal morph.
+        "PINGPONG", "Ping Pong", false));
     params.push_back(std::make_unique<juce::AudioParameterBool>(
-        "MORPHON",
-        "Morph On",
-        false));
+        "MORPHON", "Morph On", false));
+
+    // Pitch coarse — controllato da knob 8 (CC 8)
+    // Range -24/+24 semitoni, neutro a 0.5 (centro del range normalizzato)
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "PITCH", "Pitch",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.5f));
+
+    // Pitch fine — controllato dal joystick (pitch bend)
+    // Range -100/+100 cents per suonare microtonalmente
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "PITCHFINE", "Pitch Fine",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.5f));
 
     return { params.begin(), params.end() };
 }
