@@ -195,4 +195,5 @@
 
     ["CC", ccNumber, "val:", normalized.round(0.001)].postln;
 };
+
 "Mapping loaded.".postln;

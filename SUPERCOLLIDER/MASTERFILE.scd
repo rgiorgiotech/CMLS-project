@@ -221,7 +221,7 @@ s.waitForBoot({
         var amp;
 
         freq = note.midicps;
-        amp = velocity.linlin(1, 127, 0.02, 0.30);
+        amp = velocity.linlin(1, 127, 0.15, 0.8);
 
         ~playSynth.value(note, freq, amp);
         ~sendNoteOnToJuce.value(note, freq, amp);

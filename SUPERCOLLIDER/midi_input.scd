@@ -1,15 +1,3 @@
-/*
-    RAW MIDI INPUT LAYER
-
-    Purpose:
-    - Initialize MIDI.
-    - Receive raw MIDI events.
-    - Forward them to mapping.scd handlers.
-
-    Important:
-    This file should not contain musical decisions.
-*/
-
 MIDIClient.init;
 MIDIIn.connectAll;
 
@@ -18,19 +6,17 @@ MIDIClient.sources.do({ |src, i|
     [i, src].postln;
 });
 
-
-// ============================================================
-// NOTE ON
-// ============================================================
-
 MIDIdef.noteOn(\projectNoteOn, {
     |velocity, note, channel, source|
-
-    // MIDI convention:
-    // NoteOn with velocity 0 is equivalent to NoteOff.
     if (velocity == 0) {
+        // Specchia a Processing: stato 0 = rilasciato
+        ~processing.sendMsg("/vmpkNota", 0, note, velocity);
+
         ~handleNoteOff.value(note, velocity, channel, source);
     } {
+        // Specchia a Processing: stato 1 = premuto
+        ~processing.sendMsg("/vmpkNota", 1, note, velocity);
+
         ~handleNoteOn.value(note, velocity, channel, source);
     };
 });
@@ -42,21 +28,25 @@ MIDIdef.noteOn(\projectNoteOn, {
 
 MIDIdef.noteOff(\projectNoteOff, {
     |velocity, note, channel, source|
-
     ~handleNoteOff.value(note, velocity, channel, source);
 });
 
-
-// ============================================================
-// CC
-// Left unchanged for now.
-// ============================================================
-
 MIDIdef.cc(\projectCC, {
     |value, ccNumber, channel, source|
-
     ~handleCC.value(value, ccNumber, channel, source);
 });
 
 
-"MIDI input loaded.".postln;
+
+// ============================================================
+// PITCH BEND — joystick orizzontale MPK
+// Permette la microtonalita' controllata fisicamente
+// ============================================================
+
+MIDIdef.bend(\projectBend, {
+    |val, channel, source|
+    ~handlePitchBend.value(val, channel, source);
+});
+
+
+"MIDI input loaded with OSC mirroring.".postln;

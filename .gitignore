@@ -1,1 +1,28 @@
 .DS_Store
+# Visual Studio local files
+.vs/
+**/.vs/
+
+# Build folders
+Builds/
+**/Builds/
+
+# Visual Studio generated files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Compiled binaries
+*.dll
+*.exe
+*.lib
+*.pdb
+*.ilk
+*.obj
+*.tlog
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
