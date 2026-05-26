@@ -1,20 +1,20 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-static const juce::Colour BG        { 0xff1c0e06 }; // espresso scuro
-static const juce::Colour PANEL     { 0xff2e1608 }; // corpo caffè
-static const juce::Colour CREAM     { 0xfffff8e7 }; // crema
-static const juce::Colour MASCARP   { 0xfff0ddb0 }; // mascarpone
-static const juce::Colour COFFEE    { 0xff3d2010 }; // caffè medio
-static const juce::Colour ROAST     { 0xff5c3317 }; // tostato
-static const juce::Colour CHOC      { 0xff140800 }; // cioccolato fondente
-static const juce::Colour TEXT_COL  { 0xfff5e6c8 }; // testo crema
+static const juce::Colour BG        { 0xff1c0e06 }; 
+static const juce::Colour PANEL     { 0xff2e1608 }; 
+static const juce::Colour CREAM     { 0xfffff8e7 }; 
+static const juce::Colour MASCARP   { 0xfff0ddb0 }; 
+static const juce::Colour COFFEE    { 0xff3d2010 }; 
+static const juce::Colour ROAST     { 0xff5c3317 }; 
+static const juce::Colour CHOC      { 0xff140800 }; 
+static const juce::Colour TEXT_COL  { 0xfff5e6c8 }; 
 
 //==============================================================================
 TESTINGAudioProcessorEditor::TESTINGAudioProcessorEditor(TESTINGAudioProcessor& p)
     : AudioProcessorEditor(&p), audioProcessor(p)
 {
-    // Applica il look and feel tiramisù a tutti i componenti
+
     setLookAndFeel(&laf);
 
     // Labels
@@ -41,7 +41,7 @@ TESTINGAudioProcessorEditor::TESTINGAudioProcessorEditor(TESTINGAudioProcessor& 
     morphSlider.setColour(juce::Slider::textBoxBackgroundColourId, PANEL);
     morphSlider.setColour(juce::Slider::textBoxOutlineColourId,    juce::Colours::transparentBlack);
 
-    // Knob style
+    // Knobs
     auto setupKnob = [](juce::Slider& s)
     {
         s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -57,7 +57,7 @@ TESTINGAudioProcessorEditor::TESTINGAudioProcessorEditor(TESTINGAudioProcessor& 
     setupKnob(dampingSlider);
     setupKnob(driveSlider);
 
-    // Pitch knob — LAF separato (chicco crema), ma con value box visibile come gli altri knob
+    // Pitch knob 
     setupKnob(pitchSlider);
     pitchSlider.setLookAndFeel(&pitchLaf);
     pitchSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 76, 16);
@@ -66,7 +66,7 @@ TESTINGAudioProcessorEditor::TESTINGAudioProcessorEditor(TESTINGAudioProcessor& 
     pitchSlider.setColour(juce::Slider::textBoxBackgroundColourId, PANEL);
     pitchSlider.setColour(juce::Slider::textBoxOutlineColourId,    juce::Colours::transparentBlack);
 
-    // Bottoni colorati stile jack audio
+    // COLOURED BUTTONS
     pingPongButton.setButtonText("Ping Pong");
     pingPongButton.setColour(juce::ToggleButton::textColourId,         TEXT_COL);
     pingPongButton.setColour(juce::ToggleButton::tickColourId,         juce::Colour(0xff3399ff));
@@ -132,7 +132,7 @@ void TESTINGAudioProcessorEditor::timerCallback()
 }
 
 //==============================================================================
-// Bordo crema piped — serie di piccoli cerchi sovrapposti lungo il perimetro
+
 void TESTINGAudioProcessorEditor::drawCreamPiping(juce::Graphics& g,
     juce::Rectangle<float> bounds)
 {
@@ -140,47 +140,44 @@ void TESTINGAudioProcessorEditor::drawCreamPiping(juce::Graphics& g,
     float step   = blobR * 1.55f;
     auto inner   = bounds.reduced(blobR * 0.4f);
 
-    // Colori crema per i blob
+  
     juce::Colour light = CREAM.withAlpha(0.82f);
     juce::Colour shadow = juce::Colour(0xff8b5a30).withAlpha(0.30f);
 
-    // Funzione per disegnare un blob crema in una posizione
+  
     auto blob = [&](float bx, float by)
     {
-        // Ombra
+
         g.setColour(shadow);
         g.fillEllipse(bx - blobR + 1.5f, by - blobR * 0.7f + 1.5f,
                       blobR * 2.0f, blobR * 1.4f);
-        // Corpo
+
         g.setColour(light);
         g.fillEllipse(bx - blobR, by - blobR * 0.7f,
                       blobR * 2.0f, blobR * 1.4f);
-        // Highlight
+
         g.setColour(CREAM.withAlpha(0.55f));
         g.fillEllipse(bx - blobR * 0.4f, by - blobR * 0.55f,
                       blobR * 0.6f, blobR * 0.4f);
     };
 
-    // Lato superiore
+
     float y = inner.getY();
     for (float bx = inner.getX(); bx <= inner.getRight(); bx += step)
         blob(bx, y);
 
-    // Lato inferiore (solo sopra lo spectrum)
     float yb = inner.getY() + 490.0f;
     for (float bx = inner.getX(); bx <= inner.getRight(); bx += step)
         blob(bx, yb);
 
-    // Lato sinistro
     for (float by = inner.getY() + step; by < yb; by += step)
         blob(inner.getX(), by);
-
-    // Lato destro
+ 
     for (float by = inner.getY() + step; by < yb; by += step)
         blob(inner.getRight(), by);
 }
 
-// Chicco di caffè decorativo piccolo per il background
+
 void TESTINGAudioProcessorEditor::drawCoffeeBeanBg(juce::Graphics& g,
     float cx, float cy, float r, float angle)
 {
@@ -202,28 +199,27 @@ void TESTINGAudioProcessorEditor::drawCoffeeBeanBg(juce::Graphics& g,
     g.strokePath(groove, juce::PathStrokeType(r * 0.12f));
 }
 
-// Ciuffo di crema montata
+
 void TESTINGAudioProcessorEditor::drawCreamSwirl(juce::Graphics& g,
     float cx, float cy, float r)
 {
-    // Base tonda
+
     g.setColour(CREAM.withAlpha(0.75f));
     g.fillEllipse(cx - r, cy - r * 0.5f, r * 2.0f, r);
 
-    // Spirale in cima — tre cerchi sovrapposti
+
     for (int i = 0; i < 3; ++i)
     {
         float sr = r * (0.75f - i * 0.20f);
         float sy = cy - r * 0.5f - i * r * 0.45f;
         g.setColour(CREAM.withAlpha(0.80f - i * 0.15f));
         g.fillEllipse(cx - sr, sy - sr * 0.6f, sr * 2.0f, sr * 1.2f);
-        // Highlight
         g.setColour(juce::Colour(0xffffffff).withAlpha(0.25f - i * 0.06f));
         g.fillEllipse(cx - sr * 0.35f, sy - sr * 0.45f,
                       sr * 0.4f, sr * 0.25f);
     }
 
-    // Punta
+
     g.setColour(CREAM.withAlpha(0.85f));
     float tipR = r * 0.18f;
     g.fillEllipse(cx - tipR, cy - r * 1.85f, tipR * 2, tipR * 2);
@@ -236,11 +232,11 @@ void TESTINGAudioProcessorEditor::paint(juce::Graphics& g)
     int H = getHeight();
 
     // -------------------------------------------------------
-    // SFONDO — corpo strumento
+    // BACKGROUND
     // -------------------------------------------------------
     g.fillAll(BG);
 
-    // Pannello principale
+    // 
     auto panel = getLocalBounds().toFloat().reduced(10.0f);
     juce::ColourGradient panelGrad(
         PANEL.withAlpha(0.97f), 0.0f, 0.0f,
@@ -250,9 +246,7 @@ void TESTINGAudioProcessorEditor::paint(juce::Graphics& g)
     g.fillRoundedRectangle(panel, 14.0f);
 
     // -------------------------------------------------------
-    // CHICCHI DI CAFFÈ BACKGROUND (decorativi, bassissima opacità)
-    // Solo nelle aree libere dai controlli
-    // -------------------------------------------------------
+
     struct Bean { float x, y, r, a; };
     const Bean beans[] = {
         { 580, 130, 14, 0.3f },  { 590, 200, 11, 1.1f },
@@ -265,29 +259,25 @@ void TESTINGAudioProcessorEditor::paint(juce::Graphics& g)
         drawCoffeeBeanBg(g, b.x, b.y, b.r, b.a);
 
     // -------------------------------------------------------
-    // BORDO CREMA PIPED
-    // -------------------------------------------------------
+
     drawCreamPiping(g, panel);
 
     // -------------------------------------------------------
-    // CIUFFI CREMA agli angoli superiori
-    // -------------------------------------------------------
+
     drawCreamSwirl(g, (float)W - 60.0f, 56.0f, 22.0f);
     drawCreamSwirl(g, (float)W - 30.0f, 48.0f, 15.0f);
 
     // -------------------------------------------------------
-    // BORDO pannello
-    // -------------------------------------------------------
+
     g.setColour(ROAST.withAlpha(0.45f));
     g.drawRoundedRectangle(panel, 14.0f, 1.5f);
 
     // -------------------------------------------------------
-    // HEADER — titolo stampato direttamente sul plugin
+    // HEADER 
     // -------------------------------------------------------
-    // Piccolo chicco decorativo accanto al titolo
+
     drawCoffeeBeanBg(g, 34.0f, 38.0f, 10.0f, 0.2f);
 
-    // Titolo elegante: niente targhetta, testo direttamente sul corpo del plugin
     g.setColour(CREAM);
     g.setFont(juce::FontOptions(34.0f).withStyle("Bold Italic"));
     g.drawText("Ladyfingers", 54, 12, 260, 34,
@@ -303,12 +293,11 @@ void TESTINGAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("SuperCollider OSC - Tiramisu Edition",
                318, 28, 245, 14, juce::Justification::centredLeft);
 
-    // Separatore
     g.setColour(ROAST.withAlpha(0.30f));
     g.drawLine(18.0f, 70.0f, (float)W - 18.0f, 70.0f, 1.0f);
 
     // -------------------------------------------------------
-    // BARRA MORPH — label e cornice, la traccia è disegnata dal TiramisuLookAndFeel
+    //  MORPH BAR
     // -------------------------------------------------------
     auto morphFrame = juce::Rectangle<float>(28.0f, 82.0f, (float)W - 74.0f, 38.0f);
     g.setColour(CHOC.withAlpha(0.26f));
@@ -321,20 +310,19 @@ void TESTINGAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("ESPRESSO", 38, 86, 90, 14, juce::Justification::left);
     g.drawText("PANNA", W - 120, 86, 70, 14, juce::Justification::right);
 
-    // Valore morph stampato direttamente sul background: niente textbox JUCE separata
     g.setColour(CREAM.withAlpha(0.94f));
     g.setFont(juce::FontOptions(18.0f).withStyle("Bold"));
     g.drawText(juce::String(displayMorph, 3), W - 118, 97, 80, 24,
                juce::Justification::centred);
 
     // -------------------------------------------------------
-    // SEZIONE KNOB — sfondo rialzato sottile
+    //  KNOB SECTION
     // -------------------------------------------------------
     g.setColour(CHOC.withAlpha(0.25f));
     g.fillRoundedRectangle(18.0f, 128.0f, (float)W - 70.0f, 350.0f, 12.0f);
 
     // -------------------------------------------------------
-    // ENV METER — colonna crema
+    // ENV METER 
     // -------------------------------------------------------
     const int bX = W - 46;
     const int bY = 130;
@@ -362,8 +350,7 @@ void TESTINGAudioProcessorEditor::paint(juce::Graphics& g)
                juce::Justification::centred);
 
     // -------------------------------------------------------
-    // SEPARATORE + label spectrum
-    // -------------------------------------------------------
+
     g.setColour(ROAST.withAlpha(0.28f));
     g.drawLine(22.0f, 504.0f, (float)W - 22.0f, 504.0f, 1.0f);
     g.setFont(juce::FontOptions(10.0f).withStyle("Bold Italic"));
@@ -375,12 +362,7 @@ void TESTINGAudioProcessorEditor::paint(juce::Graphics& g)
 //==============================================================================
 void TESTINGAudioProcessorEditor::resized()
 {
-    // Layout leggermente più largo e arioso:
-    // - la barra Morph non usa più il textbox JUCE;
-    // - il valore Morph viene disegnato in paint() direttamente sul pannello;
-    // - i knob hanno più spazio tra label e ring circolare.
-
-    // Morph slider — dentro la cornice disegnata in paint()
+  
     morphLabel.setBounds(60, 100, 96, 18);
     morphSlider.setBounds(170, 94, getWidth() - 300, 30);
 
@@ -393,7 +375,7 @@ void TESTINGAudioProcessorEditor::resized()
 
     auto place = [&](juce::Slider& s, juce::Label& l, int x, int y)
     {
-        // Label più larga e separata dal knob: non taglia più il ring.
+  
         l.setBounds(x, y, cellWidth, labelHeight);
         l.setJustificationType(juce::Justification::centred);
 
@@ -402,20 +384,17 @@ void TESTINGAudioProcessorEditor::resized()
         s.setBounds(sliderX, sliderY, knobSize, knobSize);
     };
 
-    // Fila 1
+    // row 1
     place(wetSlider,      wetLabel,      startX + cellWidth * 0, startY);
     place(drySlider,      dryLabel,      startX + cellWidth * 1, startY);
     place(timeSlider,     timeLabel,     startX + cellWidth * 2, startY);
     place(feedbackSlider, feedbackLabel, startX + cellWidth * 3, startY);
 
-    // Fila 2
+    // row 2
     place(dampingSlider, dampingLabel, startX + cellWidth * 0, startY + cellHeight);
     place(driveSlider,   driveLabel,   startX + cellWidth * 1, startY + cellHeight);
     place(pitchSlider,   pitchLabel,   startX + cellWidth * 2, startY + cellHeight);
 
-    // Bottoni a destra:
-    // allineati alla riga del Pitch e posizionati sotto al Feedback.
-    // Così non invadono il knob Feedback e partono dalla stessa zona verticale del Pitch.
     const int pitchRowY    = startY + cellHeight;
     const int pitchSliderY = pitchRowY + labelHeight + 14;
 
@@ -426,6 +405,5 @@ void TESTINGAudioProcessorEditor::resized()
     morphOnButton.setBounds( buttonX, buttonY + 42, 150, 28);
     driveOnButton.setBounds( buttonX, buttonY + 84, 150, 28);
 
-    // Spectrum più largo e con margini coerenti
     spectrumAnalyzer.setBounds(22, 526, getWidth() - 44, 128);
 }

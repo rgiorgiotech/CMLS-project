@@ -1,12 +1,13 @@
 #pragma once
 #include <JuceHeader.h>
 
-/**
- * EnvelopeFollower — traccia l'ampiezza del segnale in tempo reale.
- * Restituisce un valore smoothed 0.0-1.0 che rappresenta
- * quanto forte sta suonando il segnale in quel momento.
- * Usato per modulare i parametri del delay in modo organico.
+ /**
+ * EnvelopeFollower — tracks the amplitude of the signal in real time
+ * gives back a value that is smoothed between o.o-1.0 
+ * which represents how strong is the signal in taht moment
+ * used to modulate the delay parameters in an organic way
  */
+
 class EnvelopeFollower
 {
 public:

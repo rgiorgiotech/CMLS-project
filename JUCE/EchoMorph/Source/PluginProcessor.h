@@ -59,7 +59,7 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
 private:
-    // OSC — riceve CC e pitch bend da SuperCollider sulla porta 9001
+
     void oscMessageReceived(const juce::OSCMessage& message) override;
     void oscBundleReceived(const juce::OSCBundle&) override {}
 

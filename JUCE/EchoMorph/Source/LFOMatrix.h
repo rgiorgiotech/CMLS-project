@@ -1,10 +1,10 @@
 #pragma once
 #include <JuceHeader.h>
 
-/**
- * LFOMatrix — oscillatore a bassa frequenza con forme d'onda multiple.
- * Usato per modulare automaticamente i parametri del delay nel tempo,
- * creando evoluzione sonora senza intervento manuale.
+ /**
+ * LFOMatrix — low frequency oscillator with multiple sinewaves.
+ * used to automaticaly model the delay parameters in time,
+ *  creating evolving sounds without manual intervention.
  */
 class LFOMatrix
 {

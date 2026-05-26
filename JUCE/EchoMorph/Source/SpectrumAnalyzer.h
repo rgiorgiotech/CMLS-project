@@ -3,9 +3,9 @@
 
 /**
  * SpectrumAnalyzer
- * Visualizzatore FFT elegante per mostrare come il plugin manipola il suono.
+
  *
- * IMPORTANTE: richiede il modulo JUCE juce_dsp attivo nel progetto Projucer.
+ * IMPORTANTE: requires JUCE juce_dsp module.
  */
 class SpectrumAnalyzer : public juce::Component,
                          private juce::Timer
@@ -24,7 +24,6 @@ public:
         stopTimer();
     }
 
-    // Chiamato dal processor/editor per alimentare il visualizer.
     void pushSamples(const float* samples, int numSamples)
     {
         if (samples == nullptr || numSamples <= 0)
@@ -38,7 +37,6 @@ public:
     {
         auto bounds = getLocalBounds().toFloat();
 
-        // Background scuro elegante
         juce::ColourGradient bg(
             juce::Colour(0xff080810), 0.0f, 0.0f,
             juce::Colour(0xff151527), 0.0f, bounds.getBottom(),
@@ -46,7 +44,6 @@ public:
         g.setGradientFill(bg);
         g.fillRoundedRectangle(bounds, 10.0f);
 
-        // Bordo
         g.setColour(juce::Colour(0x44ffffff));
         g.drawRoundedRectangle(bounds.reduced(0.5f), 10.0f, 1.0f);
 
@@ -100,7 +97,7 @@ private:
 
         for (int i = 0; i < scopeSize; ++i)
         {
-            // Mappa logaritmica: più naturale per audio/musica
+            // logaritmic map
             auto skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)scopeSize) * 0.2f);
             auto fftDataIndex = juce::jlimit(0, fftSize / 2,
                 (int) juce::jmap(skewedProportionX, 0.0f, 1.0f, 0.0f, (float) fftSize / 2.0f));
@@ -111,7 +108,7 @@ private:
             auto normalized = juce::jmap(level, mindB, maxdB, 0.0f, 1.0f);
             normalized = juce::jlimit(0.0f, 1.0f, normalized);
 
-            // Smoothing per render più fluido
+            // Smoothing 
             scopeData[(size_t) i] = scopeData[(size_t) i] * 0.82f + normalized * 0.18f;
         }
 
@@ -176,7 +173,7 @@ private:
         g.setColour(juce::Colour(0xffc9b6ff));
         g.strokePath(line, juce::PathStrokeType(2.0f));
 
-        // Glow leggero
+        // Glow 
         g.setColour(juce::Colour(0x558f5cff));
         g.strokePath(line, juce::PathStrokeType(5.0f));
     }

@@ -15,9 +15,7 @@ TESTINGAudioProcessor::TESTINGAudioProcessor()
     apvts(*this, nullptr, "Parameters", createParameters())
 #endif
 {
-    // SC manda OSC sulla porta 9001:
-    // /cc  ccNumber normalizedValue  → knob MPK
-    // /pb  centsValue                → joystick MPK (pitch bend → microtonalità)
+
     if (oscReceiver.connect(9001))
         oscReceiver.addListener(this);
 }
@@ -34,9 +32,7 @@ void TESTINGAudioProcessor::oscMessageReceived(const juce::OSCMessage& message)
     const auto pattern = message.getAddressPattern();
 
     // -------------------------------------------------------
-    // /cc ccNumber normalizedValue
-    // Knob MPK → parametri delay + pitch coarse (knob 8)
-    // -------------------------------------------------------
+
     if (pattern.matches("/cc"))
     {
         if (message.size() < 2) return;
@@ -60,9 +56,6 @@ void TESTINGAudioProcessor::oscMessageReceived(const juce::OSCMessage& message)
             case 5: setParam("DELAYTIME"); break;
             case 6: setParam("DAMPING");   break;
             case 7: setParam("DRIVE");     break;
-
-            // Knob 8 → pitch coarse in semitoni (-24 → +24)
-            // val 0.0 = -24 semitoni, 0.5 = 0 (neutro), 1.0 = +24
             case 8:
             {
                 if (auto* p = apvts.getParameter("PITCH"))
@@ -76,10 +69,7 @@ void TESTINGAudioProcessor::oscMessageReceived(const juce::OSCMessage& message)
     }
 
     // -------------------------------------------------------
-    // /pb centsValue
-    // Joystick MPK → pitch fine in cents (-100 → +100)
-    // Permette di suonare microtonalmente tra i semitoni
-    // -------------------------------------------------------
+
     if (pattern.matches("/pb"))
     {
         if (message.size() < 1) return;
@@ -87,7 +77,6 @@ void TESTINGAudioProcessor::oscMessageReceived(const juce::OSCMessage& message)
 
         const float cents = juce::jlimit(-100.0f, 100.0f, message[0].getFloat32());
 
-        // Normalizza cents (-100..+100) → (0..1) per APVTS
         const float normalized = juce::jmap(cents, -100.0f, 100.0f, 0.0f, 1.0f);
 
         if (auto* p = apvts.getParameter("PITCHFINE"))
@@ -188,7 +177,7 @@ void TESTINGAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     const float morph = apvts.getRawParameterValue("MORPH")->load();
     morphValue.store(morph);
 
-    // Delay — morph o manuale
+    // Delay — morph or manual
     const bool morphOn = apvts.getRawParameterValue("MORPHON")->load() > 0.5f;
 
     if (morphOn)
@@ -211,7 +200,7 @@ void TESTINGAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         stereoDelay.setPingPong(apvts.getRawParameterValue("PINGPONG")->load() > 0.5f);
     }
 
-    // Saturatore
+    // Saturator
     saturator.setEnabled(apvts.getRawParameterValue("DRIVEON")->load() > 0.5f);
     saturator.setDrive(apvts.getRawParameterValue("DRIVE")->load());
 
@@ -219,11 +208,11 @@ void TESTINGAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     stereoDelay.process(buffer);
 
     // Pitch shifter
-    // PITCH: 0.0 = -24 semitoni, 0.5 = neutro, 1.0 = +24
+ 
     const float pitchNorm = apvts.getRawParameterValue("PITCH")->load();
     const float pitchSemitones = juce::jmap(pitchNorm, 0.0f, 1.0f, -24.0f, 24.0f);
 
-    // PITCHFINE: 0.0 = -100 cents, 0.5 = neutro, 1.0 = +100 cents
+
     const float pitchFineNorm = apvts.getRawParameterValue("PITCHFINE")->load();
     const float pitchFineCents = juce::jmap(pitchFineNorm, 0.0f, 1.0f, -100.0f, 100.0f);
 
@@ -231,7 +220,6 @@ void TESTINGAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     pitchShifter.setPitchCents(pitchFineCents);
     pitchShifter.process(buffer);
 
-    // Alimenta il visualizzatore nell'editor
     if (auto* editor = dynamic_cast<TESTINGAudioProcessorEditor*>(getActiveEditor()))
         editor->pushAudioBufferToVisuals(buffer);
 }
@@ -293,14 +281,12 @@ TESTINGAudioProcessor::createParameters()
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         "MORPHON", "Morph On", false));
 
-    // Pitch coarse — controllato da knob 8 (CC 8)
-    // Range -24/+24 semitoni, neutro a 0.5 (centro del range normalizzato)
+    // Pitch coarse — knob 8 (CC 8)
+    // Range -24/+24 semitones, neutral at 0.5 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "PITCH", "Pitch",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.5f));
 
-    // Pitch fine — controllato dal joystick (pitch bend)
-    // Range -100/+100 cents per suonare microtonalmente
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         "PITCHFINE", "Pitch Fine",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.001f), 0.5f));
