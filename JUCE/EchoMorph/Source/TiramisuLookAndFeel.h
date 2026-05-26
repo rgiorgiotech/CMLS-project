@@ -3,16 +3,12 @@
 
 /**
  * TiramisuLookAndFeel
- * Ridisegna i componenti JUCE con un tema pasticceria:
- * - Knob = chicco di caffè che ruota
- * - Pitch knob = variante crema con bordo scuro
- * - Toggle button = pallino colorato
- * - Slider = traccia scura con thumb crema
+ * Rewrites Juce component with tiramisù style
  */
 class TiramisuLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    // Palette — niente caramello, solo cioccolato/crema/caffè
+
     static constexpr uint32_t C_ESPRESSO   = 0xff1c0e06;
     static constexpr uint32_t C_COFFEE     = 0xff3d2010;
     static constexpr uint32_t C_ROAST      = 0xff5c3317;
@@ -20,7 +16,7 @@ public:
     static constexpr uint32_t C_MASCARPONE = 0xfff0ddb0;
     static constexpr uint32_t C_CHOC_DARK  = 0xff140800;
 
-    bool isPitchKnob = false; // imposta true sul pitchSlider
+    bool isPitchKnob = false; 
 
     //==========================================================================
     // COFFEE BEAN KNOB
@@ -39,17 +35,17 @@ public:
         float angle = rotaryStartAngle
                     + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
-        // ---- Ombra sotto il chicco ----
+      
         g.setColour(juce::Colour(C_CHOC_DARK).withAlpha(0.45f));
         g.fillEllipse(cx - r * 0.72f + 2, cy - r * 0.98f + 3,
                       r * 1.44f, r * 1.96f);
 
-        // ---- Corpo chicco (ellisse ruotata) ----
+        // ---- Coffe BEan  ----
         {
             juce::Graphics::ScopedSaveState ss(g);
             g.addTransform(juce::AffineTransform::rotation(angle, cx, cy));
 
-            // Colore base: crema per pitch, caffè scuro per gli altri
+        
             juce::Colour beanCol = isPitchKnob
                 ? juce::Colour(C_MASCARPONE)
                 : juce::Colour(C_COFFEE);
@@ -65,11 +61,9 @@ public:
             float bX = cx - bW * 0.5f;
             float bY = cy - bH * 0.5f;
 
-            // Corpo principale
             g.setColour(beanCol);
             g.fillEllipse(bX, bY, bW, bH);
 
-            // Solco centrale (caratteristica del chicco di caffè)
             juce::Path groove;
             groove.startNewSubPath(cx, bY + bH * 0.06f);
             groove.cubicTo(cx + bW * 0.28f, cy - bH * 0.10f,
@@ -83,17 +77,15 @@ public:
                 juce::PathStrokeType::curved,
                 juce::PathStrokeType::rounded));
 
-            // Highlight riflesso in alto a sinistra
+
             g.setColour(beanHighlight.withAlpha(0.30f));
             g.fillEllipse(cx - bW * 0.30f, bY + bH * 0.10f,
                           bW * 0.28f, bH * 0.18f);
 
-            // Bordo
             g.setColour(beanDark.withAlpha(0.55f));
             g.drawEllipse(bX, bY, bW, bH, 1.2f);
         }
 
-        // ---- Indicatore posizione (puntino crema) ----
         {
             juce::Graphics::ScopedSaveState ss(g);
             g.addTransform(juce::AffineTransform::rotation(angle, cx, cy));
@@ -105,7 +97,6 @@ public:
             g.fillEllipse(cx - 3.0f, dotY - 3.0f, 6.0f, 6.0f);
         }
 
-        // ---- Arco range ----
         {
             float arcR = r * 1.28f;
             juce::Path arcPath;
@@ -123,7 +114,7 @@ public:
     }
 
     //==========================================================================
-    // TOGGLE BUTTON — pallino pieno colorato
+    // TOGGLE BUTTON
     //==========================================================================
     void drawToggleButton(juce::Graphics& g,
                           juce::ToggleButton& button,
@@ -137,13 +128,12 @@ public:
         float tickX = 4.0f;
         float tickY = (bounds.getHeight() - tickSize) * 0.5f;
 
-        // Pallino
+
         bool on = button.getToggleState();
         juce::Colour dot = on
             ? button.findColour(juce::ToggleButton::tickColourId)
             : button.findColour(juce::ToggleButton::tickDisabledColourId);
 
-        // Corpo pallino — cerchio pieno
         g.setColour(juce::Colour(C_CHOC_DARK).withAlpha(0.8f));
         g.fillEllipse(tickX, tickY, tickSize, tickSize);
 
@@ -152,11 +142,10 @@ public:
         g.fillEllipse(tickX + inset, tickY + inset,
                       tickSize - inset * 2, tickSize - inset * 2);
 
-        // Bordo
+  
         g.setColour(dot.withAlpha(0.5f));
         g.drawEllipse(tickX, tickY, tickSize, tickSize, 1.0f);
 
-        // Testo
         g.setColour(button.findColour(juce::ToggleButton::textColourId));
         g.setFont(juce::FontOptions(12.0f).withStyle("Bold"));
         g.drawText(button.getButtonText(),
@@ -167,7 +156,7 @@ public:
     }
 
     //==========================================================================
-    // LINEAR SLIDER (morph) — traccia scura, thumb crema tondo
+    // LINEAR SLIDER (morphh) 
     //==========================================================================
     void drawLinearSlider(juce::Graphics& g,
                           int x, int y, int w, int h,
@@ -185,16 +174,14 @@ public:
         float trackH = 8.0f;
         float trackY = y + (h - trackH) * 0.5f;
 
-        // Track sfondo
+  
         g.setColour(juce::Colour(C_CHOC_DARK).withAlpha(0.9f));
         g.fillRoundedRectangle((float)x, trackY, (float)w, trackH, 4.0f);
 
-        // Fill sinistra
         g.setColour(juce::Colour(C_ROAST).withAlpha(0.75f));
         g.fillRoundedRectangle((float)x, trackY,
                                sliderPos - x, trackH, 4.0f);
 
-        // Thumb — chicco piccolo
         float tw = 18.0f, th = 26.0f;
         float tx = sliderPos - tw * 0.5f;
         float ty = y + (h - th) * 0.5f;
@@ -216,7 +203,7 @@ public:
     }
 };
 
-// Versione per il pitch knob (chicco crema)
+
 class PitchBeanLookAndFeel : public TiramisuLookAndFeel
 {
 public:

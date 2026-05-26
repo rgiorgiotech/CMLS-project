@@ -20,7 +20,7 @@ public:
 private:
     void timerCallback() override;
 
-    // Funzioni grafiche decorative
+  
     void drawCreamPiping(juce::Graphics& g, juce::Rectangle<float> bounds);
     void drawCoffeeBeanBg(juce::Graphics& g, float cx, float cy, float r, float angle);
     void drawCreamSwirl(juce::Graphics& g, float cx, float cy, float r);
@@ -28,7 +28,7 @@ private:
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
 
-    // Look and Feel tiramisù
+  
     TiramisuLookAndFeel laf;
     PitchBeanLookAndFeel pitchLaf;
 
@@ -45,7 +45,7 @@ private:
     juce::Label morphLabel;
     juce::Label pitchLabel;
 
-    // Slider / knob
+    // Knobs
     juce::Slider morphSlider;
     juce::Slider wetSlider;
     juce::Slider drySlider;
@@ -55,12 +55,11 @@ private:
     juce::Slider driveSlider;
     juce::Slider pitchSlider;
 
-    // Bottoni
+    //Buttons
     juce::ToggleButton pingPongButton;
     juce::ToggleButton morphOnButton;
     juce::ToggleButton driveOnButton;
 
-    // Attachments slider
     std::unique_ptr<SliderAttachment> morphAttachment;
     std::unique_ptr<SliderAttachment> wetAttachment;
     std::unique_ptr<SliderAttachment> dryAttachment;
@@ -70,7 +69,7 @@ private:
     std::unique_ptr<SliderAttachment> driveAttachment;
     std::unique_ptr<SliderAttachment> pitchAttachment;
 
-    // Attachments bottoni
+ 
     std::unique_ptr<ButtonAttachment> pingPongAttachment;
     std::unique_ptr<ButtonAttachment> morphOnAttachment;
     std::unique_ptr<ButtonAttachment> driveOnAttachment;
